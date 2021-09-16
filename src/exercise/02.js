@@ -35,22 +35,37 @@ function asyncReducer(state, action) {
 }
 
 function useAsync(initialState) {
-  const run = React.useCallback(promise => {
-    if (!promise) {
-      return
+  // const isMountedRef = React.useRef(true)
+  const [mounted, setMounted] = React.useState(true)
+  React.useEffect(() => {
+    return () => {
+      setMounted(false)
     }
-
-    dispatch({type: 'pending'})
-
-    promise.then(
-      data => {
-        dispatch({type: 'resolved', data})
-      },
-      error => {
-        dispatch({type: 'rejected', error})
-      },
-    )
   }, [])
+
+  const run = React.useCallback(
+    promise => {
+      if (!promise) {
+        return
+      }
+
+      dispatch({type: 'pending'})
+
+      promise.then(
+        data => {
+          if (mounted) {
+            dispatch({type: 'resolved', data})
+          }
+        },
+        error => {
+          if (mounted) {
+            dispatch({type: 'rejected', error})
+          }
+        },
+      )
+    },
+    [mounted],
+  )
 
   const [state, dispatch] = React.useReducer(asyncReducer, {
     data: null,
